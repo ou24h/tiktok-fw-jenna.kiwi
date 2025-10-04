@@ -7,6 +7,16 @@ const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const chatId = process.env.TELEGRAM_CHAT_ID;
 const target = parseInt(process.env.TARGET_FOLLOWERS);
 
+const admin = require("firebase-admin");
+
+admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  })
+});
+
 // Step 1: Get secUid from username
 async function getSecUid(username) {
   try {
@@ -91,4 +101,5 @@ async function checkFollowers() {
 
 // Run every hour
 setInterval(checkFollowers, 10 * 1000); // كل 10 ثواني
+
 checkFollowers(); // Initial run
