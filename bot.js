@@ -92,7 +92,7 @@ async function checkFollowers() {
     await sendTelegramMessage(`🏆 Congratulations! You've reached ${current} followers on TikTok!`);
   }
 
-  const milestones = [100, 500, 1000, 5000];
+  const milestones = [500, 1000, 5000];
   for (const milestone of milestones) {
     if (previous < milestone && current >= milestone) {
       await sendTelegramMessage(`🎉 مبروك! وصلت إلى ${milestone} متابع على تيك توك!`);
@@ -106,4 +106,5 @@ async function checkFollowers() {
 setInterval(checkFollowers, 10 * 1000); // كل 10 ثواني
 
 checkFollowers(); // Initial run
+
 
