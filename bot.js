@@ -8,9 +8,9 @@ const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const chatId = process.env.TELEGRAM_CHAT_ID;
 const target = parseInt(process.env.TARGET_FOLLOWERS);
 
-// Step 1: Scrape follower count from TokCounter
-async function getFollowerCountTokCounter(username) {
-  const url = `https://tokcount.com/?user=${username}`;
+// Step 1: Scrape follower count from Livecounts.io
+async function getFollowerCountLivecounts(username) {
+  const url = `https://livecounts.io/tiktok-live-follower-count/${username}`;
   const browser = await puppeteer.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -18,10 +18,16 @@ async function getFollowerCountTokCounter(username) {
   const page = await browser.newPage();
   await page.goto(url, { waitUntil: 'networkidle2' });
 
-  await page.waitForSelector('#count');
-  const count = await page.$eval('#count', el => parseInt(el.textContent.replace(/,/g, '')));
-  await browser.close();
-  return count;
+  try {
+    await page.waitForSelector('.count', { timeout: 60000 });
+    const count = await page.$eval('.count', el => parseInt(el.textContent.replace(/,/g, '')));
+    await browser.close();
+    return count;
+  } catch (err) {
+    console.error("❌ Failed to find .count element:", err.message);
+    await browser.close();
+    return 0;
+  }
 }
 
 // Step 2: Read last saved count
@@ -52,7 +58,7 @@ async function sendTelegramMessage(message) {
 
 // Step 5: Main logic
 async function checkFollowers() {
-  const current = await getFollowerCountTokCounter(username);
+  const current = await getFollowerCountLivecounts(username);
   const previous = getLastCount();
   const diff = current - previous;
 
