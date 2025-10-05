@@ -13,6 +13,7 @@
   "dependencies": {
     "dotenv": "^17.2.3",
     "firebase-admin": "^13.5.0",
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^2.7.0",
+    "puppeteer": "^24.23.0"
   }
 }
