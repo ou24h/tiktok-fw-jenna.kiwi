@@ -8,29 +8,31 @@ const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const chatId = process.env.TELEGRAM_CHAT_ID;
 const target = parseInt(process.env.TARGET_FOLLOWERS);
 
-// Step 1: Scrape follower count from Livecounts.io
+// ✅ Step 1: Scrape follower count from Livecounts.io
 async function getFollowerCountLivecounts(username) {
   const url = `https://livecounts.io/tiktok-live-follower-count/${username}`;
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: "new",
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
   const page = await browser.newPage();
-  await page.goto(url, { waitUntil: 'networkidle2' });
+  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/117 Safari/537.36');
+  await page.setJavaScriptEnabled(true);
 
   try {
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 90000 });
     await page.waitForSelector('.count', { timeout: 60000 });
     const count = await page.$eval('.count', el => parseInt(el.textContent.replace(/,/g, '')));
     await browser.close();
     return count;
   } catch (err) {
-    console.error("❌ Failed to find .count element:", err.message);
+    console.error("❌ Failed to load Livecounts.io:", err.message);
     await browser.close();
     return 0;
   }
 }
 
-// Step 2: Read last saved count
+// ✅ Step 2: Read last saved count
 function getLastCount() {
   try {
     const raw = fs.readFileSync('followers.json');
@@ -41,12 +43,12 @@ function getLastCount() {
   }
 }
 
-// Step 3: Save current count
+// ✅ Step 3: Save current count
 function saveCount(count) {
   fs.writeFileSync('followers.json', JSON.stringify({ last: count }, null, 2));
 }
 
-// Step 4: Send Telegram message
+// ✅ Step 4: Send Telegram message
 async function sendTelegramMessage(message) {
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
   await fetch(url, {
@@ -56,7 +58,7 @@ async function sendTelegramMessage(message) {
   });
 }
 
-// Step 5: Main logic
+// ✅ Step 5: Main logic
 async function checkFollowers() {
   const current = await getFollowerCountLivecounts(username);
   const previous = getLastCount();
@@ -82,6 +84,6 @@ async function checkFollowers() {
   saveCount(current);
 }
 
-// Run every 10 seconds
+// ✅ Run every 10 seconds
 setInterval(checkFollowers, 10 * 1000);
 checkFollowers(); // Initial run
