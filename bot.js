@@ -22,17 +22,17 @@ async function getFollowerCountLivecounts(username) {
   try {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90000 });
 
-    // ✅ استخراج العدد من العنصر الذي يحتوي على الرقم
-    const count = await page.evaluate(() => {
-      const el = document.querySelector('[data-type="followers"] .count');
-      if (el) {
-        return parseInt(el.textContent.replace(/,/g, ''));
-      }
-      return 0;
-    });
+    const html = await page.content();
+    const match = html.match(/<span[^>]*class="count"[^>]*>([\d,]+)<\/span>/i);
 
     await browser.close();
-    return count;
+
+    if (match && match[1]) {
+      return parseInt(match[1].replace(/,/g, ''));
+    } else {
+      console.error("❌ Couldn't extract follower count from HTML");
+      return 0;
+    }
   } catch (err) {
     console.error("❌ Failed to load Livecounts.io:", err.message);
     await browser.close();
