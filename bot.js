@@ -1,6 +1,5 @@
 require('dotenv').config();
 const fetch = require('node-fetch');
-const puppeteer = require('puppeteer');
 const fs = require('fs');
 
 const username = process.env.TIKTOK_USERNAME;
@@ -8,34 +7,20 @@ const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const chatId = process.env.TELEGRAM_CHAT_ID;
 const target = parseInt(process.env.TARGET_FOLLOWERS);
 
-// ✅ Step 1: Scrape follower count from Livecounts.io
-async function getFollowerCountLivecounts(username) {
-  const url = `https://livecounts.io/tiktok-live-follower-count/${username}`;
-  const browser = await puppeteer.launch({
-    headless: "new",
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-  const page = await browser.newPage();
-  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/117 Safari/537.36');
-  await page.setJavaScriptEnabled(true);
-
+// ✅ Step 1: Scrape follower count from TokCounter
+async function getFollowerCountTokCounter(username) {
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90000 });
-
-    const html = await page.content();
-    const match = html.match(/<span[^>]*class="count"[^>]*>([\d,]+)<\/span>/i);
-
-    await browser.close();
-
+    const res = await fetch(`https://tokcounter.com/?user=${username}`);
+    const html = await res.text();
+    const match = html.match(/<span id="count">([\d,]+)<\/span>/);
     if (match && match[1]) {
       return parseInt(match[1].replace(/,/g, ''));
     } else {
-      console.error("❌ Couldn't extract follower count from HTML");
+      console.error("❌ Couldn't find follower count in HTML");
       return 0;
     }
   } catch (err) {
-    console.error("❌ Failed to load Livecounts.io:", err.message);
-    await browser.close();
+    console.error("❌ Error fetching TokCounter:", err.message);
     return 0;
   }
 }
@@ -68,7 +53,7 @@ async function sendTelegramMessage(message) {
 
 // ✅ Step 5: Main logic
 async function checkFollowers() {
-  const current = await getFollowerCountLivecounts(username);
+  const current = await getFollowerCountTokCounter(username);
   const previous = getLastCount();
   const diff = current - previous;
 
