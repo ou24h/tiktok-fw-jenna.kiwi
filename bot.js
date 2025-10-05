@@ -11,7 +11,10 @@ const target = parseInt(process.env.TARGET_FOLLOWERS);
 // Step 1: Scrape follower count from TokCounter
 async function getFollowerCountTokCounter(username) {
   const url = `https://tokcount.com/?user=${username}`;
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
   const page = await browser.newPage();
   await page.goto(url, { waitUntil: 'networkidle2' });
 
