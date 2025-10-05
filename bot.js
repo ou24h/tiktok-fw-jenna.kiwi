@@ -8,7 +8,7 @@ const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const chatId = process.env.TELEGRAM_CHAT_ID;
 const target = parseInt(process.env.TARGET_FOLLOWERS);
 
-// ✅ Step 1: Scrape follower count from TokCounter
+// ✅ Step 1: Scrape follower count from TokCounter using HTML regex
 async function getFollowerCountTokCounter(username) {
   const url = `https://tokcounter.com/?user=${username}`;
   const browser = await puppeteer.launch({
@@ -20,11 +20,18 @@ async function getFollowerCountTokCounter(username) {
 
   try {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    await page.waitForSelector('#count', { timeout: 30000 });
 
-    const count = await page.$eval('#count', el => parseInt(el.textContent.replace(/,/g, '')));
+    const html = await page.content();
+    const match = html.match(/<span[^>]*id="count"[^>]*>([\d,]+)<\/span>/i);
+
     await browser.close();
-    return count;
+
+    if (match && match[1]) {
+      return parseInt(match[1].replace(/,/g, ''));
+    } else {
+      console.error("❌ Couldn't extract follower count from HTML");
+      return 0;
+    }
   } catch (err) {
     console.error("❌ Puppeteer failed on TokCounter:", err.message);
     await browser.close();
