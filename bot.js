@@ -1,5 +1,6 @@
 require('dotenv').config();
 const fetch = require('node-fetch');
+const puppeteer = require('puppeteer');
 const fs = require('fs');
 
 const username = process.env.TIKTOK_USERNAME;
@@ -9,18 +10,24 @@ const target = parseInt(process.env.TARGET_FOLLOWERS);
 
 // ✅ Step 1: Scrape follower count from TokCounter
 async function getFollowerCountTokCounter(username) {
+  const url = `https://tokcounter.com/?user=${username}`;
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
+  const page = await browser.newPage();
+  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/117 Safari/537.36');
+
   try {
-    const res = await fetch(`https://tokcounter.com/?user=${username}`);
-    const html = await res.text();
-    const match = html.match(/<span id="count">([\d,]+)<\/span>/);
-    if (match && match[1]) {
-      return parseInt(match[1].replace(/,/g, ''));
-    } else {
-      console.error("❌ Couldn't find follower count in HTML");
-      return 0;
-    }
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForSelector('#count', { timeout: 30000 });
+
+    const count = await page.$eval('#count', el => parseInt(el.textContent.replace(/,/g, '')));
+    await browser.close();
+    return count;
   } catch (err) {
-    console.error("❌ Error fetching TokCounter:", err.message);
+    console.error("❌ Puppeteer failed on TokCounter:", err.message);
+    await browser.close();
     return 0;
   }
 }
