@@ -20,9 +20,17 @@ async function getFollowerCountLivecounts(username) {
   await page.setJavaScriptEnabled(true);
 
   try {
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 90000 });
-    await page.waitForSelector('.count', { timeout: 60000 });
-    const count = await page.$eval('.count', el => parseInt(el.textContent.replace(/,/g, '')));
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90000 });
+
+    // ✅ استخراج العدد من العنصر الذي يحتوي على الرقم
+    const count = await page.evaluate(() => {
+      const el = document.querySelector('[data-type="followers"] .count');
+      if (el) {
+        return parseInt(el.textContent.replace(/,/g, ''));
+      }
+      return 0;
+    });
+
     await browser.close();
     return count;
   } catch (err) {
